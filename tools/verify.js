@@ -6,6 +6,7 @@ const check = (name, ok, info) => { results.push([ok ? 'PASS' : 'FAIL', name, in
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
   const p = await open(b, { width: 1280, height: 760 });
   // ---- generation
+  await p.evaluate(() => window.__nad.setMode('heist'));
   const solv = await p.evaluate(() => { let ok = 0; for (let i = 1; i <= 30; i++) { const r = window.__nad.validate(i * 7919); if (r.card && r.ball && r.kick) ok++; } return ok; });
   check('30 random nights solvable', solv === 30, solv + '/30');
   await p.evaluate(() => { window.__nad.brief(424242); window.__nad.begin(); });

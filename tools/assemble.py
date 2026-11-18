@@ -168,5 +168,7 @@ s = rep(s, 'function boot() { toMenu(); requestAnimationFrame(frame); }', '''fun
   initThree(); toMenu(); requestAnimationFrame(frame);
 }''')
 s = rep(s, '<title>Northridge After Dark</title>', '<title>Northridge After Dark 3D</title>')
+import streak_hooks
+s = streak_hooks.apply(s, rep, cut)
 open('/home/user/stadiumgame/index.html', 'w').write(s)
 print('ok', len(s))

@@ -19,6 +19,8 @@ function updatePlayer(dt) {
   if (kick) { player.moving = false; player.mode = player.sneak ? "sneak" : "walk"; updateKick(dt); if (mode !== "play") return; }
   const [ix, iy, mag0] = kick ? [0, 0, 0] : inputVec();
   const mag = mag0;
+  if (isStreak() && streak) streakMovement(dt, ix, iy, mag);
+  else {
   const sprint = (keys["shift"] || touchSprint) && mag > 0;
   player.mode = sprint ? "sprint" : player.sneak ? "sneak" : "walk";
   const spd = SPEED[player.mode] * (mag ? Math.max(.45, mag) : 0);
@@ -52,6 +54,7 @@ function updatePlayer(dt) {
   if (player.h <= g) {
     if (!player.onGround && player.vh < -6.5) { emitNoise(player.x, player.y, 4 * T); sfx("land"); }
     player.h = g; player.vh = 0; player.onGround = true;
+  }
   }
   player.kickAnim = Math.max(0, (player.kickAnim || 0) - dt * 2.5);
 

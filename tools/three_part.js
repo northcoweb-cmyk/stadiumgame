@@ -188,7 +188,9 @@ function initThree() {
   scene.add(confetti);
 
   playerMesh = makeHuman({ body: 0xd5dae6, legs: 0x1a1f2b, head: 0x8f97ab, pack: 0xe6c34a });
+  playerMesh.rotation.order = "YXZ";
   scene.add(playerMesh);
+  jailLight = new THREE.PointLight(0xffe2b0, 0, 12, 2); scene.add(jailLight);
   playerMarker = new THREE.Sprite(new THREE.SpriteMaterial({ map: markTex.glow, color: 0xe6c34a, depthTest: false, transparent: true, opacity: .55 }));
   playerMarker.scale.set(1.4, 1.4, 1); playerMarker.renderOrder = 10; scene.add(playerMarker);
   ballMesh = makeFootball(); ballMesh.visible = false; scene.add(ballMesh);
@@ -301,6 +303,7 @@ function buildSeats() {
       list.push({ x: toX(x), y: tierH(o - 6), z: toZ(y), ry: Math.atan2(nx, ny) + (v < .1 ? (R() - .5) * .3 : 0), color });
     });
   }
+  seatSpots = list;
   return instanced(geo, MAT.seat, list, { cast: false });
 }
 
@@ -532,6 +535,8 @@ function buildWorld3D() {
 
   // doors
   for (const d of doors) buildDoor(d);
+  if (isStreak()) { buildCrowd(worldGroup); buildCheckpoint(worldGroup); drawStreakBoard(); }
+  applyModeLook();
 }
 
 function drawScoreboardTex(home) {
@@ -608,7 +613,7 @@ function buildActors() {
   disposeGroup(actorGroup);
   actorGroup = new THREE.Group(); scene.add(actorGroup);
   for (const g of guards) {
-    g.mesh = makeHuman({ body: 0x2b3756, legs: 0x141a29, head: 0x8a7562, cap: 0x10162a });
+    g.mesh = makeHuman(g.path.kind === "usher" ? { body: 0xf07a1a, legs: 0x1a1f2b, head: 0x8a7562, cap: 0x111111 } : { body: 0x2b3756, legs: 0x141a29, head: 0x8a7562, cap: 0x10162a });
     const fl = new THREE.Mesh(new THREE.CylinderGeometry(.04, .05, .25, 8), MAT.metal); fl.rotation.x = Math.PI / 2; fl.position.set(.31, 1.0, .25); g.mesh.add(fl);
     const beam = new THREE.Mesh((() => { const c = new THREE.ConeGeometry(2.6, 9, 20, 1, true); c.translate(0, -4.5, 0); c.rotateX(-Math.PI / 2); return c; })(), new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: .045, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
     beam.position.set(.31, 1.0, .35); beam.rotation.x = .16; g.mesh.add(beam); g.beam = beam;
@@ -639,6 +644,7 @@ function buildActors() {
   const tee = new THREE.Mesh(new THREE.ConeGeometry(.08, .12, 10), new THREE.MeshStandardMaterial({ color: 0xff7a2a })); tee.position.y = .06; kickMarker.add(tee);
   kickMarker.userData.ring = ring;
   actorGroup.add(kickMarker);
+  if (isStreak()) { kickMarker.visible = false; buildStreakActors(); }
 }
 function makeItemMesh(it) {
   const grp = new THREE.Group();
@@ -672,7 +678,9 @@ addEventListener("resize", resize);
 function updateCam3(dt) {
   const k = 1 - Math.exp(-dt * 7);
   let tgt, pos;
-  if (mode === "menu" || mode === "brief") {
+  const sc = isStreak() && streak ? streakCamera(dt) : null;
+  if (sc) { tgt = sc[0]; pos = sc[1]; }
+  else if (mode === "menu" || mode === "brief") {
     menuT += dt;
     const a = menuT * .045 + .6;
     tgt = new THREE.Vector3(0, FIELD_Y + 2, 0);
@@ -794,7 +802,7 @@ function render3D(now, dt) {
   }
   // rain around the camera target
   const rain = scene.getObjectByName("rain");
-  rain.visible = !reduceMotion;
+  rain.visible = !reduceMotion && !isStreak();
   if (rain.visible) {
     for (let i = 0; i < 1800; i++) {
       const o = i * 6; let y = rainPos[o + 1] - 24 * dt;
@@ -804,5 +812,6 @@ function render3D(now, dt) {
     rain.position.set(camTarget.x, camTarget.y - 2, camTarget.z);
     rainGeo.attributes.position.needsUpdate = true;
   }
+  if (isStreak() && streak) renderStreak(now, dt);
   renderer.render(scene, cam3);
 }
